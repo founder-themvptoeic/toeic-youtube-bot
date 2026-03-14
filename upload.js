@@ -90,8 +90,7 @@ function getRandomHashtags(type,count=3){
 
 function buildTitle(type, caption, number){
 
-  let prefix = ""
-
+let prefix = "TOEIC Practice"
   if(type === "part1")
     prefix = "🎧 TOEIC Part 1"
 
