@@ -90,7 +90,8 @@ function getRandomHashtags(type,count=3){
 
 function buildTitle(type, caption, number){
 
-let prefix = "TOEIC Practice"
+  let prefix = "TOEIC Practice"
+
   if(type === "part1")
     prefix = "🎧 TOEIC Part 1"
 
@@ -105,12 +106,16 @@ let prefix = "TOEIC Practice"
 
   const hashtags = getRandomHashtags(type)
 
-  if(!caption)
-    return `${prefix} #${number} | TOEIC Practice ${hashtags}`
+  if(!caption || caption.trim()==="")
+    caption = "Improve your TOEIC English"
 
-  return `${prefix} #${number} | ${caption} ${hashtags}`
+  const title = `${prefix} #${number} | ${caption} ${hashtags}`
+
+  if(!title || title.length < 5)
+    return "TOEIC Practice | Learn English #shorts"
+
+  return title
 }
-
 const PLAYLISTS = {
   vocab: "PLIRmjh9pcXwNHJo2S_XRzlUYvrvbJkk1K",
   part1: "PLIRmjh9pcXwMgVILPLAxaQ-2PIqKxp3II",
