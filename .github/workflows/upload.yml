@@ -5,6 +5,9 @@ on:
     - cron: "0 */2 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   upload:
 
@@ -38,6 +41,8 @@ jobs:
         run: |
           git config --global user.name "bot"
           git config --global user.email "bot@github.com"
+
+          git pull --rebase
 
           git add uploaded.json counter.json
 
