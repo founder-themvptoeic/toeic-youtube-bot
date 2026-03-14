@@ -1,0 +1,46 @@
+name: YouTube Auto Upload
+
+on:
+  schedule:
+    - cron: "0 */2 * * *"
+  workflow_dispatch:
+
+jobs:
+  upload:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Create client_secret.json
+        run: |
+          echo "${{ secrets.CLIENT_SECRET }}" | base64 -d > client_secret.json
+
+      - name: Create token.json
+        run: |
+          echo "${{ secrets.TOKEN_JSON }}" | base64 -d > token.json
+
+      - name: Run uploader
+        run: node upload.js
+
+      - name: Commit updated files
+        run: |
+          git config --global user.name "bot"
+          git config --global user.email "bot@github.com"
+
+          git add uploaded.json counter.json
+
+          git commit -m "update counters" || echo "No changes"
+
+          git push
