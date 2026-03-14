@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: youtube-upload
+  cancel-in-progress: false
+
 jobs:
   upload:
 
@@ -43,6 +47,7 @@ jobs:
           git config --global user.email "bot@github.com"
 
           git add uploaded.json counter.json
+
           git commit -m "update counters" || echo "No changes"
 
           git push
