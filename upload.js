@@ -7,7 +7,9 @@ function sleep(ms){
 }
 
 function getRandomComment(){
+  console.log("Loading comments.json")
   const comments = JSON.parse(fs.readFileSync("./comments.json","utf8"))
+  console.log("Comments count:", comments.length)
   return comments[Math.floor(Math.random()*comments.length)]
 }
 
@@ -15,25 +17,36 @@ function getRandomCaption(type){
 
   const file = `./captions/${type}.json`
 
+  console.log("Reading caption file:", file)
+
   if(!fs.existsSync(file)){
-    console.log("Caption file not found:", file)
+    console.log("❌ Caption file not found:", file)
     return ""
   }
 
   try{
 
-    const data = JSON.parse(fs.readFileSync(file,"utf8"))
+    const raw = fs.readFileSync(file,"utf8")
+    console.log("Caption raw size:", raw.length)
 
-    if(!data.captions || data.captions.length === 0)
+    const data = JSON.parse(raw)
+
+    if(!data.captions || data.captions.length === 0){
+      console.log("⚠ captions array missing or empty")
       return ""
+    }
 
     const captions = data.captions
 
-    return captions[Math.floor(Math.random()*captions.length)]
+    const caption = captions[Math.floor(Math.random()*captions.length)]
+
+    console.log("Selected caption:", caption)
+
+    return caption
 
   }catch(err){
 
-    console.log("Caption JSON error:", err.message)
+    console.log("❌ Caption JSON error:", err.message)
 
     return ""
   }
@@ -80,15 +93,26 @@ function getRandomHashtags(type,count=3){
 
   const list = HASHTAGS[type] || []
 
-  if(list.length===0) return ""
+  console.log("Hashtag pool:", list)
+
+  if(list.length===0){
+    console.log("⚠ No hashtags for type:", type)
+    return ""
+  }
 
   const shuffled=[...list].sort(()=>0.5-Math.random())
 
-  return shuffled.slice(0,count).join(" ")
+  const tags = shuffled.slice(0,count).join(" ")
+
+  console.log("Selected hashtags:", tags)
+
+  return tags
 
 }
 
 function buildTitle(type, caption, number){
+
+  console.log("Building title with:", {type,caption,number})
 
   let prefix = "TOEIC Practice"
 
@@ -106,16 +130,23 @@ function buildTitle(type, caption, number){
 
   const hashtags = getRandomHashtags(type)
 
-  if(!caption || caption.trim()==="")
+  if(!caption || caption.trim()===""){
+    console.log("⚠ Caption empty → fallback caption")
     caption = "Improve your TOEIC English"
+  }
 
   const title = `${prefix} #${number} | ${caption} ${hashtags}`
 
-  if(!title || title.length < 5)
+  console.log("Generated title:", title)
+
+  if(!title || title.length < 5){
+    console.log("⚠ Invalid title fallback triggered")
     return "TOEIC Practice | Learn English #shorts"
+  }
 
   return title
 }
+
 const PLAYLISTS = {
   vocab: "PLIRmjh9pcXwNHJo2S_XRzlUYvrvbJkk1K",
   part1: "PLIRmjh9pcXwMgVILPLAxaQ-2PIqKxp3II",
@@ -161,12 +192,15 @@ function matchContentType(file,type){
 
   const name = file.toLowerCase()
 
-  if(type==="vocab") return name.includes("vocab")
-  if(type==="sentence") return name.includes("sentence")
-  if(type==="part1") return name.includes("part1") || name.includes("part-1")
-  if(type==="part2") return name.includes("part2") || name.includes("part-2")
+  const match =
+    (type==="vocab" && name.includes("vocab")) ||
+    (type==="sentence" && name.includes("sentence")) ||
+    (type==="part1" && (name.includes("part1") || name.includes("part-1"))) ||
+    (type==="part2" && (name.includes("part2") || name.includes("part-2")))
 
-  return false
+  console.log("Check file:",file,"type:",type,"match:",match)
+
+  return match
 }
 
 function detectPlaylist(file){
@@ -186,17 +220,12 @@ function loadUploaded(){
   const file="./uploaded.json"
 
   if(!fs.existsSync(file)){
+    console.log("Creating uploaded.json")
     fs.writeFileSync(file,JSON.stringify([],null,2))
     return []
   }
 
-  try{
-    const data=JSON.parse(fs.readFileSync(file,"utf8"))
-    return Array.isArray(data)?data:[]
-  }catch{
-    fs.writeFileSync(file,JSON.stringify([],null,2))
-    return []
-  }
+  return JSON.parse(fs.readFileSync(file,"utf8"))
 }
 
 function saveUploaded(list){
@@ -208,6 +237,8 @@ function loadCounter(){
   const file="./counter.json"
 
   if(!fs.existsSync(file)){
+
+    console.log("Creating counter.json")
 
     const init={
       vocab:0,
@@ -232,53 +263,14 @@ function saveCounter(data){
 
 }
 
-async function addToPlaylist(youtube,playlistId,videoId){
-
-  await youtube.playlistItems.insert({
-    part:"snippet",
-    requestBody:{
-      snippet:{
-        playlistId,
-        resourceId:{
-          kind:"youtube#video",
-          videoId
-        }
-      }
-    }
-  })
-}
-
-async function postComment(youtube,videoId,text){
-
-  const res=await youtube.commentThreads.insert({
-    part:"snippet",
-    requestBody:{
-      snippet:{
-        videoId,
-        topLevelComment:{
-          snippet:{ textOriginal:text }
-        }
-      }
-    }
-  })
-
-  return res.data.id
-}
-
-async function pinComment(youtube,commentId){
-
-  await youtube.comments.setModerationStatus({
-    id:commentId,
-    moderationStatus:"published"
-  })
-}
-
 async function uploadVideo(youtube,filePath,type,number){
 
-  console.log("Uploading:",filePath)
+  console.log("Uploading file:",filePath)
 
   const caption = getRandomCaption(type)
   const title = buildTitle(type, caption, number)
+
+  console.log("FINAL TITLE SENT TO YOUTUBE:", title)
 
   const description =
 `Luyện TOEIC mỗi ngày.
@@ -315,40 +307,7 @@ https://placement.themvptoeic.com/?Source=youtube_short
 
   const videoId=res.data.id
 
-  console.log("Uploaded:",videoId)
-
-  const playlistId=detectPlaylist(path.basename(filePath))
-
-  if(playlistId){
-
-    await addToPlaylist(youtube,playlistId,videoId)
-
-    console.log("Added to playlist")
-
-  }
-
-  const delay = 60000 + Math.random()*60000
-  await sleep(delay)
-
-  try{
-
-    const commentId=await postComment(
-      youtube,
-      videoId,
-      getRandomComment()
-    )
-
-    await sleep(5000)
-
-    await pinComment(youtube,commentId)
-
-    console.log("Comment pinned")
-
-  }catch(err){
-
-    console.log("Comment error",err.message)
-
-  }
+  console.log("Uploaded videoId:",videoId)
 
 }
 
@@ -359,20 +318,25 @@ async function main(){
   const today=getToday()
 
   console.log("Current time:",now.toLocaleString())
+  console.log("Today folder:",today)
 
   const uploaded=loadUploaded()
   const counter=loadCounter()
 
   const todayFolder=path.join("./videos",today)
 
+  console.log("Looking for folder:",todayFolder)
+
   if(!fs.existsSync(todayFolder)){
 
-    console.log("No folder:",todayFolder)
+    console.log("❌ No folder:",todayFolder)
     return
   }
 
   const allVideos=fs.readdirSync(todayFolder)
     .filter(f=>f.endsWith(".mp4"))
+
+  console.log("Videos found:",allVideos)
 
   const credentials=JSON.parse(fs.readFileSync("client_secret.json","utf8"))
   const token=JSON.parse(fs.readFileSync("token.json","utf8"))
@@ -412,6 +376,8 @@ async function main(){
       return true
     })
 
+    console.log("Candidates:",candidates)
+
     if(candidates.length===0){
 
       console.log("No video for",slot.type)
@@ -419,10 +385,14 @@ async function main(){
     }
 
     const file=candidates[Math.floor(Math.random()*candidates.length)]
+
     const filePath=path.join(todayFolder,file)
 
     counter[slot.type]++
     const number=counter[slot.type]
+
+    console.log("Uploading candidate:",file)
+    console.log("Counter:",number)
 
     await uploadVideo(youtube,filePath,slot.type,number)
 
