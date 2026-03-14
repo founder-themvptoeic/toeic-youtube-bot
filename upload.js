@@ -11,7 +11,7 @@ function sanitizeTitle(title){
   if(!title) return "TOEIC Practice | Learn English"
 
   return title
-    .replace(/[\u{1F300}-\u{1FAFF}]/gu,"") // remove emoji
+    .replace(/[\u{1F300}-\u{1FAFF}]/gu,"")
     .replace(/\s+/g," ")
     .trim()
     .slice(0,95)
@@ -120,9 +120,7 @@ function buildTitle(type, caption, number){
   if(!caption || caption.trim()==="")
     caption = "Improve your TOEIC English"
 
-  const title = `${prefix} #${number} | ${caption} ${hashtags}`
-
-  return title
+  return `${prefix} #${number} | ${caption} ${hashtags}`
 }
 
 const PLAYLISTS = {
@@ -257,6 +255,31 @@ async function addToPlaylist(youtube,playlistId,videoId){
   })
 }
 
+async function postComment(youtube,videoId,text){
+
+  const res=await youtube.commentThreads.insert({
+    part:"snippet",
+    requestBody:{
+      snippet:{
+        videoId,
+        topLevelComment:{
+          snippet:{ textOriginal:text }
+        }
+      }
+    }
+  })
+
+  return res.data.id
+}
+
+async function pinComment(youtube,commentId){
+
+  await youtube.comments.setModerationStatus({
+    id:commentId,
+    moderationStatus:"published"
+  })
+}
+
 async function uploadVideo(youtube,filePath,type,number){
 
   console.log("Uploading:",filePath)
@@ -313,6 +336,29 @@ https://placement.themvptoeic.com/?Source=youtube_short
     await addToPlaylist(youtube,playlistId,videoId)
 
     console.log("Added to playlist")
+
+  }
+
+  const delay = 60000 + Math.random()*60000
+  await sleep(delay)
+
+  try{
+
+    const commentId=await postComment(
+      youtube,
+      videoId,
+      getRandomComment()
+    )
+
+    await sleep(5000)
+
+    await pinComment(youtube,commentId)
+
+    console.log("Comment pinned")
+
+  }catch(err){
+
+    console.log("Comment error",err.message)
 
   }
 
