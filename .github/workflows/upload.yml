@@ -2,8 +2,7 @@ name: YouTube Auto Upload
 
 on:
   schedule:
-    - cron: "0 23 * * *"
-    - cron: "0 0-16 * * *"
+    - cron: "15 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -47,7 +46,8 @@ jobs:
           git config --global user.name "bot"
           git config --global user.email "bot@github.com"
 
-          git pull --rebase
           git add uploaded.json counter.json
+
           git commit -m "update counters" || echo "No changes"
+
           git push
