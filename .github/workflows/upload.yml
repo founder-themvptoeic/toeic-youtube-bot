@@ -1,8 +1,6 @@
 name: YouTube Auto Upload
 
 on:
-  schedule:
-    - cron: "*/20 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -19,16 +17,15 @@ jobs:
 
     steps:
 
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm install
+      - run: npm install
 
       - name: Create client_secret.json
         run: |
